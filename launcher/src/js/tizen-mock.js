@@ -28,7 +28,10 @@
         app('adplatform.ADPlayer', 'ADPlayer'),
         app('com.samsung.tv.store', 'Apps'),
         app('25emanual3.emanual', 'e-Manual'),
-        app('org.tizen.volume-setting', 'Volume', false)
+        app('org.tizen.volume-setting', 'Volume', false),
+        // System apps the launcher opens directly: the TV viewer (HDMI) and Samsung Home
+        app('org.tizen.tv-viewer', 'TV', false),
+        app('com.samsung.tv.csfs', 'Smart Hub', false)
     ];
 
     var sources = {
@@ -42,9 +45,11 @@
     window.tizen = {
         application: {
             getAppsInfo: function (ok) { later(function () { ok(apps.slice()); }); },
+            // Unknown ids fail like on the TV, so a wrong id in config.js shows up in the preview.
             launch: function (id, ok, err) {
                 console.log('[mock] launch', id);
-                later(ok);
+                var known = apps.some(function (a) { return a.id === id; });
+                later(known ? ok : function () { err({ name: 'NotFoundError', message: 'No app ' + id }); });
             },
             getCurrentApplication: function () {
                 return { appInfo: { id: 'FrmLnchr01.Launcher' }, exit: function () {}, hide: function () {} };

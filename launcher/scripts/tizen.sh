@@ -29,7 +29,7 @@ case "${1:-}" in
   install)
     : "${TV_IP:?set TV_IP to the address of the TV}"
     # Only the TV at TV_IP, even when another one is also connected.
-    target() { "$SDB" devices | awk -v serial="$TV_IP:26101" 'NR>1 && $1 == serial {print $3; exit}'; }
+    target() { "$SDB" devices | awk -v serial="$TV_IP:26101" 'NR>1 && $1 == serial && $2 == "device" {print $3; exit}'; }
     "$SDB" connect "$TV_IP:26101"
     TARGET=$(target)
     # The first connect after the sdb server starts can fail (with exit status 0); retry once.

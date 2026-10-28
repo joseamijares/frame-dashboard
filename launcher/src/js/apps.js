@@ -69,11 +69,13 @@
         var out = [];
         (cfg.apps || []).forEach(function (entry) {
             var re = entry.match ? new RegExp(entry.match, 'i') : null;
-            var candidates = apps.filter(function (a) {
-                if (used[a.id]) return false;
-                if (entry.id) return a.id === entry.id;
-                return re && (re.test(a.id) || re.test(a.name));
-            });
+            var free = apps.filter(function (a) { return !used[a.id]; });
+            // An exact id wins; `match` is the fallback when that id isn't installed (another
+            // model, or the app was reinstalled under a new id).
+            var candidates = entry.id ? free.filter(function (a) { return a.id === entry.id; }) : [];
+            if (!candidates.length && re) {
+                candidates = free.filter(function (a) { return re.test(a.id) || re.test(a.name); });
+            }
             // Prefer a visible consumer app when several match (e.g. Netflix and a Netflix service).
             var app = candidates.find(isConsumer) || candidates[0];
             if (app) {

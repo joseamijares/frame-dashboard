@@ -52,6 +52,12 @@
         }
     };
 
+    // es-MX reads the es-ES table: weather words don't differ by region here.
+    function sameLanguage(locale) {
+        var lang = String(locale || '').split('-')[0];
+        return Object.keys(LABELS).find(function (k) { return k.split('-')[0] === lang; });
+    }
+
     /*
      * Stroke icons in the same style as the gear on Home: 24x24, no fill, round caps. A shared
      * cloud outline with different marks under it, so eight states cost one shape and a line each.
@@ -131,7 +137,7 @@
     function current() {
         if (!configured() || !reading || age() > USABLE_MS) return null;
         var locale = Prefs.get().appearance.locale;
-        var labels = LABELS[locale] || LABELS['en-GB'];
+        var labels = LABELS[locale] || LABELS[sameLanguage(locale)] || LABELS['en-GB'];
         var name = group(reading.code);
         return {
             temp: Math.round(reading.temp) + '°',

@@ -4,7 +4,8 @@
  * apps: each entry picks the first installed app matching it:
  *   { id: 'org.tizen.netflix-app' }   exact app id (most reliable; see "All apps", the id of
  *                                     the focused app is shown at the bottom)
- *   { match: 'netflix' }              case-insensitive regex on id or name
+ *   { match: 'netflix' }              case-insensitive regex on id or name; with `id` too, it is
+ *                                     the fallback when that id isn't installed
  *   label                             optional display name
  *   brand                             optional key from js/brands.js (otherwise guessed from the name)
  * Entries that match nothing are skipped.
@@ -16,12 +17,12 @@
  */
 window.LAUNCHER_CONFIG = {
     apps: [
-        { id: '9Ur5IzDKqV.TizenYouTube', label: 'YouTube', brand: 'youtube' },
-        { id: 'org.tizen.netflix-app', label: 'Netflix', brand: 'netflix' },
-        { id: '5b8c3eb16b.BeamCTVDev', label: 'HBO Max', brand: 'hbomax' },
-        { id: 'rJeHak5zRg.Spotify', label: 'Spotify', brand: 'spotify' },
-        { id: 'MCmYXNxgcu.DisneyPlus', label: 'Disney+', brand: 'disneyplus' },
-        { id: 'org.tizen.primevideo', label: 'Prime Video', brand: 'primevideo' },
+        { id: '9Ur5IzDKqV.TizenYouTube', match: '^youtube$', label: 'YouTube', brand: 'youtube' },
+        { id: 'org.tizen.netflix-app', match: '^netflix$', label: 'Netflix', brand: 'netflix' },
+        { id: '5b8c3eb16b.BeamCTVDev', match: '^(hbo ?)?max$', label: 'HBO Max', brand: 'hbomax' },
+        { id: 'rJeHak5zRg.Spotify', match: '^spotify', label: 'Spotify', brand: 'spotify' },
+        { id: 'MCmYXNxgcu.DisneyPlus', match: '^disney', label: 'Disney+', brand: 'disneyplus' },
+        { id: 'org.tizen.primevideo', match: '^prime ?video', label: 'Prime Video', brand: 'primevideo' },
         // The dashboard in this repo (tizen/config.xml)
         { id: 'FrmDashbd1.FrameDashboard', label: 'Dashboard', brand: 'frame' }
     ],
