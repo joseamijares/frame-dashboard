@@ -28,9 +28,16 @@ case "${1:-}" in
     ;;
   install)
     : "${TV_IP:?set TV_IP to the address of the TV}"
-    "$SDB" connect "$TV_IP:26101"
     # Only the TV at TV_IP, even when another one is also connected.
-    TARGET=$("$SDB" devices | awk -v serial="$TV_IP:26101" 'NR>1 && $1 == serial {print $3; exit}')
+    target() { "$SDB" devices | awk -v serial="$TV_IP:26101" 'NR>1 && $1 == serial {print $3; exit}'; }
+    "$SDB" connect "$TV_IP:26101"
+    TARGET=$(target)
+    # The first connect after the sdb server starts can fail (with exit status 0); retry once.
+    if [ -z "$TARGET" ]; then
+      sleep 2
+      "$SDB" connect "$TV_IP:26101"
+      TARGET=$(target)
+    fi
     [ -n "$TARGET" ] || { echo "No TV connected at $TV_IP:26101 (is Developer Mode pointing at this Mac?)"; exit 1; }
     "$TIZEN" install -n FrameLauncher.wgt -t "$TARGET" -- .
     "$TIZEN" run -p "$APP_ID" -t "$TARGET"

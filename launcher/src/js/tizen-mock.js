@@ -14,9 +14,9 @@
 
     var apps = [
         app('FrmLnchr01.Launcher', 'Frame Launcher'),
-        app('111299001912', 'YouTube'),
+        app('9Ur5IzDKqV.TizenYouTube', 'YouTube'),
         app('org.tizen.netflix-app', 'Netflix'),
-        app('3201601007230', 'HBO Max'),
+        app('5b8c3eb16b.BeamCTVDev', 'HBO Max'),
         app('rJeHak5zRg.Spotify', 'Spotify - Music and Podcasts'),
         app('MCmYXNxgcu.DisneyPlus', 'Disney+'),
         app('org.tizen.primevideo', 'Prime Video'),

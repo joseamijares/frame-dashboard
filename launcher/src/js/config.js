@@ -11,17 +11,17 @@
  *
  * inputs: HDMI ports shown in the second row. Set `hdmi` to the port each device is plugged into.
  *
- * The `match` patterns below cover the usual Samsung names. If one doesn't show up on the TV,
- * press Red (All apps): the id of the focused app is shown bottom-left; pin it here as `id`.
+ * The ids below were read from the Frame (QN50LS03B) on 2026-10-27. If an app is reinstalled
+ * under a new id, press Red (All apps): the id of the focused app is shown bottom right.
  */
 window.LAUNCHER_CONFIG = {
     apps: [
-        { match: '^youtube$|111299001912', label: 'YouTube', brand: 'youtube' },
-        { match: 'netflix', label: 'Netflix', brand: 'netflix' },
-        { match: '^(hbo ?)?max$|\\bhbo\\b', label: 'HBO Max', brand: 'hbomax' },
-        { match: 'spotify', label: 'Spotify', brand: 'spotify' },
-        { match: 'disney', label: 'Disney+', brand: 'disneyplus' },
-        { match: 'prime ?video', label: 'Prime Video', brand: 'primevideo' },
+        { id: '9Ur5IzDKqV.TizenYouTube', label: 'YouTube', brand: 'youtube' },
+        { id: 'org.tizen.netflix-app', label: 'Netflix', brand: 'netflix' },
+        { id: '5b8c3eb16b.BeamCTVDev', label: 'HBO Max', brand: 'hbomax' },
+        { id: 'rJeHak5zRg.Spotify', label: 'Spotify', brand: 'spotify' },
+        { id: 'MCmYXNxgcu.DisneyPlus', label: 'Disney+', brand: 'disneyplus' },
+        { id: 'org.tizen.primevideo', label: 'Prime Video', brand: 'primevideo' },
         // The dashboard in this repo (tizen/config.xml)
         { id: 'FrmDashbd1.FrameDashboard', label: 'Dashboard', brand: 'frame' }
     ],

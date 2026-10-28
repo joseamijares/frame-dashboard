@@ -201,7 +201,7 @@ remote hangs the next one.
 Edit `launcher/src/js/config.js` for the apps and HDMI ports; Settings on the
 TV can also reorder apps and rename, add or hide inputs. Apps are found by
 name, so if one is missing press **Red** (All apps): the focused app's id is
-shown bottom-left, and you can pin it in `config.js` as `{ id: '…' }`.
+shown bottom right, and you can pin it in `config.js` as `{ id: '…' }`.
 **Blue** opens the Lab screen, which tests HDMI switching methods.
 
 The launcher opens from the TV's app row like any other app. Making it the
