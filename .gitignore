@@ -20,3 +20,4 @@ assets/mockup/
 launcher/src/js/config.local.js
 launcher/.buildResult/
 launcher/src/.buildResult/
+launcher/logs/

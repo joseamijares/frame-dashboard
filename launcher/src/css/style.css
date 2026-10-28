@@ -836,7 +836,9 @@ footer {
     color: var(--faint);
 }
 
-#footer-left {
+/* All apps: id of the focused app, to pin in config.js. Right-aligned, clear of the hints. */
+.app-id {
+    margin-left: auto;
     font-family: Menlo, "Courier New", monospace;
 }
 

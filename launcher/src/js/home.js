@@ -18,7 +18,8 @@
         lastFetch: 0,
         showEverything: false, // All apps: bypass the consumer filter
         tvMode: false,         // HDMI shown inside the launcher
-        hdmi: {}               // last known { port: connected }
+        hdmi: {},              // last known { port: connected }
+        labLogBound: false     // renderLab can run again; the log listener is added once
     };
 
     // ---------- Tiles
@@ -220,9 +221,12 @@
             li._item = { kind: 'lab', run: a.run };
             list.appendChild(li);
         });
-        DevLog.onLine(function () {
-            $('lab-log').textContent = DevLog.lines().slice(-26).join('\n');
-        });
+        if (!state.labLogBound) {
+            state.labLogBound = true;
+            DevLog.onLine(function () {
+                $('lab-log').textContent = DevLog.lines().slice(-26).join('\n');
+            });
+        }
     }
 
     // ---------- Actions
@@ -356,6 +360,8 @@
             writeCache(list);
             setApps(list);
         }).catch(function (err) {
+            // Let the next return to Home try again instead of waiting out REFRESH_AFTER_MS.
+            state.lastFetch = 0;
             UI.toast('Could not list apps: ' + DevLog.errorText(err));
             log('App list failed: ' + DevLog.errorText(err));
         });
@@ -392,6 +398,10 @@
             el: $('all'),
             rows: function () { return UI.chunk(UI.children($('all-grid')), GRID_COLS); },
             onShow: renderAll,
+            // The id to pin in config.js, for the app under the cursor
+            onFocus: function (target) {
+                $('app-id').textContent = target._item && target._item.id || '';
+            },
             activate: launchApp,
             hints: [['OK', 'Open'], ['Back', 'Home']]
         });

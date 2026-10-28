@@ -1,9 +1,12 @@
 // Serves src/ for desktop preview. Arrow keys + Enter navigate, Esc/Backspace = Back.
 import { createServer } from 'node:http';
 import { readFile, writeFile, access } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = resolve(import.meta.dirname, '..', 'src');
+const here = dirname(fileURLToPath(import.meta.url));
+
+const root = resolve(here, '..', 'src');
 
 // index.html always loads the gitignored local overrides; make sure there is something to load.
 const localConfig = join(root, 'js', 'config.local.js');

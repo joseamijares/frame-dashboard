@@ -9,10 +9,13 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, statSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const launcher = resolve(import.meta.dirname, '..');
+const launcher = resolve(here, '..');
 const repo = resolve(launcher, '..');
 const outDir = join(launcher, 'src/img/wallpapers');
 const art = JSON.parse(readFileSync(join(repo, 'lib/art.json'), 'utf8'));

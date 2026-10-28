@@ -1,7 +1,10 @@
 // Writes a simple placeholder src/icon.png (512x512) with no dependencies.
 import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 const size = 512;
 const bg = [13, 15, 18];
@@ -56,6 +59,6 @@ const png = Buffer.concat([
     chunk('IEND', Buffer.alloc(0))
 ]);
 
-const out = resolve(import.meta.dirname, '..', 'src', 'icon.png');
+const out = resolve(here, '..', 'src', 'icon.png');
 writeFileSync(out, png);
 console.log('Wrote', out);

@@ -158,7 +158,7 @@
             min: day.temperature_2m_min[0]
         };
         store();
-        listeners.forEach(function (fn) { fn(); });
+        listeners.slice().forEach(function (fn) { fn(); });
         return true;
     }
 
@@ -231,6 +231,8 @@
                     }
                     DevLog.log('Weather: requesting ' + url());
                     var once = function () {
+                        var at = listeners.indexOf(once);
+                        if (at >= 0) listeners.splice(at, 1);
                         DevLog.log('Weather: ' + JSON.stringify(reading));
                         UI.toast('Weather updated');
                     };

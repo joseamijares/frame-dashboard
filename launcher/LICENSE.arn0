@@ -25,9 +25,12 @@ SOFTWARE.
 This licence covers the original code and documentation in this repository.
 Bundled third-party assets keep their own terms:
 
-- Fonts (Manrope, Inter, Outfit, DM Sans) — SIL Open Font License; see src/fonts/OFL.txt
-- Wallpapers — Unsplash License; credits shown in the launcher when you switch wallpaper
+- Fonts (Manrope, Inter, Outfit, DM Sans, Geist, Instrument Serif) — SIL Open Font License;
+  each family's notice is in src/fonts/OFL-<family>.txt
+- Wallpapers — public-domain paintings from this repo's collection (lib/art.json), credited
+  on screen; they replace arn0-tv's Unsplash photos
 - Brand marks — Simple Icons (CC0) and Custom Brand Icons (MIT); see src/img/marks/SOURCES.md
+  and the Custom Brand Icons notice in src/img/marks/LICENSE-custom-brand-icons.txt
 
 Brand names and logos belong to their respective owners. This project is
 independent and is not affiliated with, endorsed by, or connected to Samsung

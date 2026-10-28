@@ -1,10 +1,13 @@
 // Writes pre-coloured copies of the brand marks to src/img/tiles/<brand>.svg, using the
 // TILE_INK colour from src/js/brands.js. Plain <img> tiles are much cheaper on the TV than CSS masks.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
 import vm from 'node:vm';
 
-const src = resolve(import.meta.dirname, '..', 'src');
+const src = resolve(here, '..', 'src');
 const sandbox = { window: {} };
 vm.runInNewContext(await readFile(resolve(src, 'js/brands.js'), 'utf8'), sandbox);
 
