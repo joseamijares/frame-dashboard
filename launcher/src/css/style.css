@@ -275,6 +275,12 @@ h1, h2 {
     color: var(--fg);
 }
 
+/* Picked up for reordering (hold OK): lifted above the row; the hint bar says ◀ ▶ Move. */
+.app.moving .tile {
+    transform: translateY(-16px) scale(1.1);
+    box-shadow: 0 0 0 4px var(--gilt), 0 40px 80px rgba(0, 0, 0, 0.7);
+}
+
 .mark {
     position: absolute;
     top: 26%;

@@ -18,6 +18,7 @@
         lastFetch: 0,
         showEverything: false, // All apps: bypass the consumer filter
         tvMode: false,         // HDMI shown inside the launcher
+        moving: null,          // app tile picked up for reordering
         hdmi: {},              // last known { port: connected }
         labLogBound: false     // renderLab can run again; the log listener is added once
     };
@@ -148,6 +149,7 @@
         Prefs.get().home = items.map(function (i) {
             var entry = { id: i.id, label: i.label };
             if (i.brand) entry.brand = i.brand.key;
+            if (i.match) entry.match = i.match;
             return entry;
         });
         Prefs.save();
@@ -375,14 +377,118 @@
         }
     }
 
+    // ---------- Reorder: hold OK on an app tile, move it with ◀ ▶, OK or Back drops it
+
+    var HOLD_MS = 650;
+    var press = null;        // { tile, timer, repeats } while OK is down on an app tile
+    var keyupWorks = false;  // set by the first keyup we see; some remotes only repeat keydown
+    var held = false;        // OK still down after the pickup: its repeats must not drop the tile
+    var lastEnterAt = 0;
+
+    function appTiles() {
+        return UI.children($('apps-row')).filter(function (t) { return t._item.kind === 'app'; });
+    }
+
+    function focusedAppTile() {
+        var tile = document.querySelector('#apps-row .app.focused');
+        return tile && tile._item.kind === 'app' ? tile : null;
+    }
+
+    function startMoving(tile) {
+        state.moving = tile;
+        held = true;
+        tile.classList.add('moving');
+        UI.refreshHints();
+        if (window.Sound) Sound.play('select');
+    }
+
+    function shift(dir) {
+        var tile = state.moving;
+        var tiles = appTiles();
+        var at = tiles.indexOf(tile);
+        var to = at + dir;
+        if (to < 0 || to >= tiles.length) {
+            if (window.Sound) Sound.play('edge');
+            return;
+        }
+        var row = $('apps-row');
+        if (dir > 0) row.insertBefore(tiles[to], tile);
+        else row.insertBefore(tile, tiles[to]);
+        UI.focusOn(tile);
+        if (window.Sound) Sound.play('move');
+    }
+
+    function stopMoving() {
+        var tile = state.moving;
+        state.moving = null;
+        tile.classList.remove('moving');
+        var id = tile._item.id;
+        setHomeItems(appTiles().map(function (t) { return t._item; }));
+        // renderHome rebuilt the row; put focus back on the tile that moved.
+        var again = appTiles().find(function (t) { return t._item.id === id; });
+        if (again) UI.focusOn(again);
+        UI.refreshHints();
+    }
+
+    function settlePress(asHold) {
+        var p = press;
+        press = null;
+        clearTimeout(p.timer);
+        if (asHold) startMoving(p.tile);
+        else launchApp(p.tile._item);
+    }
+
+    // Home's own keys: OK on an app tile waits to tell a tap from a hold; while a tile is
+    // picked up, ◀ ▶ move it and everything else is swallowed until it is dropped.
+    function homeKey(k) {
+        var now = Date.now();
+        var enterGap = k === KEY.ENTER ? now - lastEnterAt : Infinity;
+        if (k === KEY.ENTER) lastEnterAt = now;
+        if (state.moving) {
+            // Without keyup, a repeat is an OK that follows the last one within auto-repeat pace.
+            if (held && k === KEY.ENTER && (keyupWorks || enterGap < 300)) return true;
+            held = false;
+            if (k === KEY.LEFT) shift(-1);
+            else if (k === KEY.RIGHT) shift(1);
+            else if (k === KEY.ENTER || k === KEY.BACK || k === KEY.ESC || k === KEY.BACKSPACE) stopMoving();
+            return true;
+        }
+        if (k !== KEY.ENTER) return false;
+        if (press) {
+            // Auto-repeat while the button is held
+            press.repeats++;
+            return true;
+        }
+        var tile = focusedAppTile();
+        if (!tile) return false;
+        press = { tile: tile, repeats: 0 };
+        press.timer = setTimeout(function () {
+            // Held if the key is still down (keyup works and hasn't come) or is repeating.
+            settlePress(keyupWorks || press.repeats > 0);
+        }, HOLD_MS);
+        return true;
+    }
+
+    document.addEventListener('keyup', function (e) {
+        if (e.keyCode !== KEY.ENTER) return;
+        keyupWorks = true;
+        held = false;
+        if (press) settlePress(false);
+    });
+
     function registerViews() {
         UI.register('home', {
             el: $('home'),
             startRow: 1,
-            hints: [['OK', 'Open'], ['▲', 'Settings']],
+            hints: function () {
+                return state.moving
+                    ? [['◀ ▶', 'Move'], ['OK', 'Done']]
+                    : [['OK', 'Open'], ['Hold OK', 'Move'], ['▲', 'Settings']];
+            },
             rows: function () {
                 return [[$('gear')], UI.children($('apps-row')), UI.children($('inputs-row'))];
             },
+            onKey: homeKey,
             activate: function (item) {
                 if (item.kind === 'app') launchApp(item);
                 else if (item.kind === 'all') UI.show('all');

@@ -104,7 +104,9 @@
             id: app.id,
             label: entry.label || shortName(app.name),
             brand: entry.brand ? findBrand(entry.brand) : findBrand(app),
-            iconPath: app.iconPath || ''
+            iconPath: app.iconPath || '',
+            // Kept so a reordered Home still falls back to the name if the id changes.
+            match: entry.match || ''
         };
     }
 

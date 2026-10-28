@@ -198,6 +198,9 @@ them, edit `PICKS` in `launcher/scripts/paintings.mjs` and run
 and converts with macOS `sips`). **Green** on the
 remote hangs the next one.
 
+**Hold OK** on an app to pick it up, move it with ◀ ▶, and press OK again to
+drop it; the new order is saved on the TV.
+
 Edit `launcher/src/js/config.js` for the apps and HDMI ports; Settings on the
 TV can also reorder apps and rename, add or hide inputs. Apps are found by
 name, so if one is missing press **Red** (All apps): the focused app's id is
