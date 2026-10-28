@@ -194,7 +194,8 @@ TV_IP=192.168.1.50 npm run launcher:install
 The paintings are 12 landscapes from `lib/art.json`, cropped to 16:9 with the
 dark readability scrim baked in (the TV can't afford live gradients). To change
 them, edit `PICKS` in `launcher/scripts/paintings.mjs` and run
-`node launcher/scripts/paintings.mjs` (needs Google Chrome). **Green** on the
+`node launcher/scripts/paintings.mjs` on a Mac (it renders with Google Chrome
+and converts with macOS `sips`). **Green** on the
 remote hangs the next one.
 
 Edit `launcher/src/js/config.js` for the apps and HDMI ports; Settings on the
