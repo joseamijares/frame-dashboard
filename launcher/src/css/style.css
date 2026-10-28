@@ -1,0 +1,1021 @@
+/*
+ * Fixed 1920x1080 stage.
+ *
+ * Performance rules for TV hardware, measured on the reference Q70B (Chromium 85, 4 cores, 2 GB)
+ * with the Lab render probe rather than assumed. Baseline for a focus walk along eight tiles is
+ * 59.5 fps / 16.8 ms, zero dropped frames:
+ *
+ *   - Blurred box-shadows are FREE. Eight tiles at `0 40px 100px` measured 59.5 fps and zero
+ *     dropped frames, indistinguishable from baseline across two runs. Use them.
+ *   - Live gradient layers are RUINOUS. Three 1100px radial-gradient layers behind the UI
+ *     measured 4.6 fps, 178.7 ms median, 88 of 90 frames dropped. Never composite one at
+ *     runtime: bake it into the wallpaper instead (see scripts/prepare-wallpapers.mjs, which
+ *     already burns the readability scrim into the JPEG at build time).
+ *
+ * Still assumed rather than measured: no filters or masks; no rounded clipping (overflow: hidden
+ * + border-radius) on tiles; only transform animates, on elements with their own layer. The
+ * engine does report `filter: blur` and `backdrop-filter` as supported, so if either becomes
+ * worth having, measure it first — the probe is in the Lab screen.
+ *
+ * This engine lacks `inset`, `aspect-ratio`, `overflow: clip`, the individual transform
+ * properties, `color-mix()`, container queries and `:has()`. Grid, gap, sticky and `clamp()` work.
+ */
+@font-face {
+    font-family: "Manrope";
+    src: url("../fonts/manrope.woff2") format("woff2");
+    font-weight: 200 800;
+}
+
+@font-face {
+    font-family: "Inter";
+    src: url("../fonts/inter.woff2") format("woff2");
+    font-weight: 100 900;
+}
+
+@font-face {
+    font-family: "Outfit";
+    src: url("../fonts/outfit.woff2") format("woff2");
+    font-weight: 100 900;
+}
+
+@font-face {
+    font-family: "DM Sans";
+    src: url("../fonts/dm-sans.woff2") format("woff2");
+    font-weight: 100 1000;
+}
+
+:root {
+    --bg: #090b10;
+    --fg: #f4f5f7;
+    --muted: rgba(244, 245, 247, 0.55);
+    --faint: rgba(244, 245, 247, 0.5);
+    --ring: #ffffff;
+    --font: "Manrope", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+    --edge: 120px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    cursor: none;
+}
+
+#stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: var(--bg);
+    transform-origin: 0 0;
+}
+
+#bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    background: var(--bg) url("../img/bg.jpg") center / cover no-repeat;
+    will-change: transform;
+}
+
+.view {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+h1, h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* ---------- Home ---------- */
+
+.clock {
+    position: absolute;
+    top: 88px;
+    left: var(--edge);
+}
+
+#time {
+    font-size: 132px;
+    font-weight: 300;
+    letter-spacing: -3px;
+    line-height: 1;
+}
+
+#time-suffix {
+    margin-left: 14px;
+    font-size: 44px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+
+#date {
+    margin-top: 14px;
+    font-size: 34px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+/* Appearance options */
+.no-date #date { display: none; }
+.names-never .app .label,
+.names-focused .app .label { visibility: hidden; }
+.names-focused .app.focused .label { visibility: visible; }
+
+.shelf {
+    position: absolute;
+    left: var(--edge);
+    right: 0;
+}
+
+#apps-section { top: 350px; }
+#inputs-section { top: 690px; }
+
+.shelf h2 {
+    margin-bottom: 26px;
+    font-size: 24px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.row-viewport {
+    width: 1680px;
+}
+
+.row-track {
+    position: relative;
+    display: flex;
+    will-change: transform;
+    transition: transform 0.18s ease-out;
+}
+
+/* App tiles */
+
+.app {
+    flex: none;
+    width: 300px;
+    margin-right: 36px;
+}
+
+.tile {
+    position: relative;
+    height: 170px;
+    border-radius: 22px;
+}
+
+/* Home tiles get their own layer so focus scaling never repaints. The All apps grid has
+   too many tiles for that, so it changes focus without animation. */
+.row-track .tile {
+    will-change: transform;
+    transition: transform 0.1s ease-out;
+}
+
+.app .label {
+    margin-top: 18px;
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app.focused .tile,
+.input.focused .tile {
+    transform: scale(1.07);
+    box-shadow: 0 0 0 5px var(--ring);
+}
+
+.app.focused .label {
+    color: var(--fg);
+}
+
+.mark {
+    position: absolute;
+    top: 26%;
+    left: 22%;
+    width: 56%;
+    height: 48%;
+    object-fit: contain;
+}
+
+.wordmark {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.mono {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120px;
+    height: 120px;
+    margin: -60px 0 0 -60px;
+    object-fit: contain;
+}
+
+.all-tile {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.all-tile svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+}
+
+/* Input tiles */
+
+.input {
+    flex: none;
+    width: 536px;
+    margin-right: 36px;
+}
+
+.input .tile {
+    height: 190px;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+}
+
+.input .mark {
+    position: relative;
+    top: auto;
+    left: auto;
+    flex: none;
+    width: 80px;
+    height: 80px;
+    margin-right: 30px;
+}
+
+.input .meta {
+    min-width: 0;
+}
+
+.input .name {
+    font-size: 34px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.input .port {
+    margin-top: 10px;
+    font-size: 24px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    vertical-align: 1px;
+}
+
+.dot.on { background: #4ade80; }
+
+
+/* Gear (Settings) */
+
+.gear {
+    position: absolute;
+    top: 100px;
+    right: var(--edge);
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    color: var(--muted);
+    will-change: transform;
+    transition: transform 0.1s ease-out;
+}
+
+.gear svg {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    width: 44px;
+    height: 44px;
+}
+
+.gear.focused {
+    background: var(--fg);
+    color: var(--bg);
+    transform: scale(1.08);
+}
+
+/* ---------- Pages (everything except Home) ---------- */
+
+/* Static dim layer so pages stay readable over any wallpaper. */
+.page {
+    background: rgba(9, 11, 16, 0.8);
+}
+
+/* ---------- All apps ---------- */
+
+.page-head {
+    position: absolute;
+    top: 88px;
+    left: var(--edge);
+    right: var(--edge);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 28px;
+    color: var(--muted);
+}
+
+.page-head h1 {
+    font-size: 72px;
+    color: var(--fg);
+    letter-spacing: -1px;
+}
+
+.grid-viewport {
+    position: absolute;
+    top: 210px;
+    bottom: 100px;
+    left: 96px;
+    width: 1728px;
+    overflow: hidden;
+    /* room for the scaled focus ring at the edges */
+    padding: 20px 24px 0;
+    box-sizing: border-box;
+}
+
+.grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, 300px);
+    column-gap: 45px;
+    row-gap: 34px;
+    transition: transform 0.22s ease-out;
+}
+
+/* ---------- Settings ---------- */
+
+.settings-list {
+    position: absolute;
+    top: 230px;
+    left: var(--edge);
+    width: 1100px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/*
+ * The overview has eight entries; one column of them ran 110px into the hint bar. It fills the
+ * first column top to bottom and then the second, so Down still moves through the entries in the
+ * order they read — registerList builds the focus grid to match.
+ */
+.settings-list.two-col {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 40px;
+    width: 1680px;
+}
+
+.two-col .setting-row {
+    margin-bottom: 0;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    padding: 24px 36px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 36px;
+    font-weight: 600;
+}
+
+.setting-label {
+    flex: 1;
+}
+
+.setting-row .mini {
+    margin-right: 28px;
+}
+
+.setting-value {
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.setting-row.focused {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+.setting-row.focused .setting-value {
+    color: rgba(9, 11, 16, 0.6);
+}
+
+.settings-body {
+    position: absolute;
+    top: 220px;
+    left: var(--edge);
+    right: var(--edge);
+}
+
+.setting-block {
+    margin-bottom: 48px;
+}
+
+.compact .setting-block {
+    margin-bottom: 30px;
+}
+
+.compact .setting-block h2 {
+    margin-bottom: 14px;
+}
+
+.setting-block h2,
+.ed-col h2 {
+    margin-bottom: 22px;
+    font-size: 24px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.chips {
+    display: flex;
+}
+
+.chip {
+    padding: 16px 32px;
+    margin-right: 16px;
+    border-radius: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.chip.on {
+    background: rgba(62, 142, 255, 0.35);
+    color: var(--fg);
+}
+
+.chip.on::before {
+    content: "✓\00a0\00a0";
+}
+
+.chip.focused {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+.thumbs {
+    display: grid;
+    grid-template-columns: repeat(6, 256px);
+    column-gap: 28px;
+    row-gap: 26px;
+}
+
+.thumb img {
+    display: block;
+    width: 256px;
+    height: 144px;
+    border-radius: 14px;
+}
+
+.thumb-title {
+    margin-top: 12px;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.thumb.on .thumb-title {
+    color: var(--fg);
+}
+
+.thumb.on .thumb-title::before {
+    content: "✓\00a0\00a0";
+    color: #3e8eff;
+}
+
+.thumb.on img {
+    box-shadow: 0 0 0 4px #3e8eff;
+}
+
+.thumb.focused img {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 5px var(--ring);
+}
+
+/* Apps on Home editor */
+
+.ed-col {
+    position: absolute;
+    top: 220px;
+    bottom: 110px;
+    width: 780px;
+}
+
+.ed-left { left: var(--edge); }
+.ed-right { left: 1020px; }
+
+.vport {
+    position: absolute;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    padding-top: 6px;
+    box-sizing: border-box;
+}
+
+.vtrack {
+    position: relative;
+    transition: transform 0.18s ease-out;
+}
+
+.ed-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+    margin-bottom: 6px;
+    border-radius: 14px;
+    font-size: 30px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.ed-item.focused {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+.ed-item.moving {
+    background: #3e8eff;
+    color: #fff;
+}
+
+.ed-move {
+    margin-left: auto;
+    font-size: 34px;
+}
+
+.mini {
+    flex: none;
+    width: 96px;
+    margin-right: 22px;
+}
+
+.mini .tile {
+    height: 54px;
+    border-radius: 10px;
+}
+
+.mini .wordmark { font-size: 22px; letter-spacing: 0; }
+.mini .mono { font-size: 22px; letter-spacing: 0; }
+
+.mini .icon {
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+}
+
+/* Pop-up menu */
+
+.overlay {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.menu-box {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 640px;
+    width: 640px;
+    padding: 36px;
+    border-radius: 22px;
+    background: #1b1e25;
+    box-sizing: border-box;
+}
+
+#menu-title {
+    margin-bottom: 20px;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+#menu-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#menu-list li {
+    padding: 16px 24px;
+    margin-bottom: 6px;
+    border-radius: 12px;
+    font-size: 30px;
+    color: var(--muted);
+}
+
+#menu-list li.focused {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+#menu-list li.checked::before {
+    content: "✓\00a0\00a0";
+}
+
+.dialog-title {
+    margin-bottom: 20px;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+#rename-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 18px 24px;
+    border: 0;
+    border-radius: 12px;
+    outline: none;
+    background: var(--fg);
+    color: var(--bg);
+    font: 600 34px var(--font);
+}
+
+/* ---------- Lab ---------- */
+
+.lab-list {
+    position: absolute;
+    top: 220px;
+    left: var(--edge);
+    width: 860px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lab-list li {
+    padding: 10px 24px;
+    margin-bottom: 4px;
+    border-radius: 10px;
+    font-size: 26px;
+    color: var(--muted);
+}
+
+.lab-list li.focused {
+    background: var(--fg);
+    color: var(--bg);
+}
+
+.lab-log {
+    position: absolute;
+    top: 220px;
+    bottom: 120px;
+    left: 1040px;
+    right: var(--edge);
+    margin: 0;
+    padding: 24px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.45);
+    font: 20px/1.45 Menlo, "Courier New", monospace;
+    color: #cfd3da;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow: hidden;
+}
+
+/* ---------- Footer, toast ---------- */
+
+footer {
+    position: absolute;
+    left: var(--edge);
+    right: var(--edge);
+    bottom: 44px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 24px;
+    color: var(--faint);
+}
+
+#footer-left {
+    font-family: Menlo, "Courier New", monospace;
+}
+
+#toast {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    width: 900px;
+    margin-left: -450px;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 22px 34px;
+    border-radius: 16px;
+    background: #23262e;
+    color: var(--fg);
+    font-size: 28px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+#toast.visible { opacity: 1; }
+
+/* HDMI shown inside the launcher: the video plane must be visible through the page. */
+html.tv-mode, html.tv-mode body { background: transparent; }
+html.tv-mode #stage { visibility: hidden; }
+
+/* Desktop preview only: the stage is scaled to fit the browser window. */
+html.preview, html.preview body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    cursor: default;
+}
+
+/*
+ * Remote hints along the bottom: what OK and Back do on the current screen.
+ *
+ * Cheap by construction: flat borders and text, no shadow and no gradient, which keeps it clear
+ * of the one effect measured as ruinous on this hardware.
+ */
+.hints {
+    position: absolute;
+    left: var(--edge);
+    right: var(--edge);
+    bottom: 48px;
+    display: flex;
+    gap: 40px;
+    font-size: 22px;
+    color: #a3a8b3;
+}
+
+.hints.hidden { display: none; }
+
+.hint {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.hint-key {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 4px 12px;
+    color: #e6e8ee;
+    font-weight: 600;
+}
+
+/*
+ * Render probe stage (Lab only). Deliberately breaks the performance rules above: that is the
+ * point — these styles exist to measure what breaking them costs on this TV.
+ */
+/* Chromium 85 has no `inset` shorthand, so the sides are set individually. */
+.probe-stage {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    background: #07080c;
+}
+
+.probe-glow {
+    position: absolute;
+    width: 1100px;
+    height: 1100px;
+    background: radial-gradient(circle, rgba(120, 140, 255, 0.5), rgba(120, 140, 255, 0) 70%);
+}
+
+.probe-glow-0 { top: -380px; left: 140px; }
+.probe-glow-1 { top: 180px; left: 820px; }
+.probe-glow-2 { top: -220px; left: 1400px; }
+
+.probe-row {
+    position: absolute;
+    top: 420px;
+    left: var(--edge);
+    display: flex;
+    gap: 36px;
+}
+
+.probe-tile {
+    width: 300px;
+    height: 170px;
+    border-radius: 18px;
+    background: linear-gradient(140deg, #d8232a, #8c1419);
+}
+
+/* The expensive kind: a large blur radius, as used throughout the proposed redesign. */
+.probe-shadow { box-shadow: 0 40px 100px rgba(0, 0, 0, 0.6); }
+
+.probe-focus { box-shadow: 0 0 0 5px var(--ring), 0 40px 100px rgba(0, 0, 0, 0.6); }
+
+/*
+ * Screen saver.
+ *
+ * Only `transform` and `opacity` are animated, both on elements with their own layer, so the
+ * drift and the crossfade should be composited rather than repainted. That follows the rule at
+ * the top of this file but is not separately measured: the Lab probe times rAF intervals while
+ * JavaScript mutates the stage, and these transitions are set once and then run without the
+ * main thread, which that probe would report as a clean 60 fps whether or not the panel keeps
+ * up. Judge it by eye instead — Settings ▸ Screen saver ▸ Show it now, on the TV.
+ *
+ * Not every composited property is equal on this engine, which only showing it on the TV
+ * revealed: an animated `scale()` re-rasterises the layer in visible steps, while a `translate()`
+ * of the same layer is smooth. Hence the pan.
+ *
+ * What is measured is what this deliberately avoids. The design mockup's backdrop was nine
+ * radial-gradients over a linear-gradient, the shape that came back at 4.6 fps with 88 of 90
+ * frames dropped; a photo fills that role here. The one gradient left is the scrim, which is
+ * static and painted once.
+ */
+#screensaver {
+    background: #05060a;
+}
+
+/*
+ * Laid out 320x180 larger than the screen and offset by half of that, so the photo can drift
+ * 160px horizontally and 90px vertically without ever showing an edge. Panning rather than
+ * zooming is deliberate: see the comment in js/screensaver.js. The transform transition is set
+ * from JavaScript because its duration follows how long each photo is up.
+ */
+.ss-photo {
+    position: absolute;
+    top: -90px;
+    left: -160px;
+    width: 2240px;
+    height: 1260px;
+    opacity: 0;
+    background: center / cover no-repeat;
+    transform: translate(0, 0);
+    transition: opacity 2000ms linear;
+    will-change: transform, opacity;
+}
+
+.ss-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 420px;
+    background: linear-gradient(180deg, rgba(3, 4, 7, 0), rgba(3, 4, 7, 0.55));
+}
+
+.ss-caption {
+    position: absolute;
+    left: var(--edge);
+    bottom: 96px;
+    transition: transform 1200ms ease-out;
+}
+
+.ss-title {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(220, 224, 232, 0.75);
+}
+
+/*
+ * Four anchors, cycled every couple of minutes so nothing bright sits in one place long enough
+ * to mark the panel. They keep clear of the caption's bottom-left corner.
+ */
+.ss-clock {
+    position: absolute;
+    display: flex;
+    /* Bottom-aligned so the weather detail and the date share a baseline. */
+    align-items: flex-end;
+    gap: 36px;
+    transition: transform 1200ms ease-out;
+}
+
+.ss-clock.pos-0 { right: var(--edge); bottom: 96px; }
+.ss-clock.pos-1 { right: var(--edge); top: 96px; }
+.ss-clock.pos-2 { left: var(--edge); top: 96px; }
+.ss-clock.pos-3 { right: var(--edge); top: 470px; }
+
+.ss-clock-main {
+    text-align: right;
+}
+
+/* Only drawn when there is a reading to divide it from. */
+.ss-clock.with-weather .ss-clock-main {
+    border-left: 1px solid rgba(220, 224, 232, 0.22);
+    padding-left: 36px;
+}
+
+.ss-time {
+    font-size: 72px;
+    font-weight: 300;
+    line-height: 1;
+    color: rgba(243, 244, 246, 0.95);
+}
+
+.ss-date {
+    margin-top: 10px;
+    font-size: 30px;
+    color: rgba(220, 224, 232, 0.75);
+}
+
+.ss-weather {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.ss-wx-now {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ss-wx-icon svg {
+    display: block;
+    width: 44px;
+    height: 48px;
+    color: rgba(243, 244, 246, 0.9);
+}
+
+.ss-wx-temp {
+    font-size: 46px;
+    font-weight: 300;
+    line-height: 1;
+    color: rgba(243, 244, 246, 0.95);
+}
+
+.ss-wx-detail {
+    margin-top: 10px;
+    font-size: 26px;
+    color: rgba(220, 224, 232, 0.6);
+}
+
+.ss-dark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1920px;
+    height: 1080px;
+    background: #000;
+    opacity: 0;
+    transition: opacity 10000ms linear;
+}

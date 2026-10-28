@@ -52,6 +52,7 @@ every screen. You never reinstall.
 | `lib/` | iCal expansion, plan validation, storage, art |
 | `tizen/` | Samsung TV shell (`.wgt`) |
 | `android/` | Android TV shell (`.apk`), launches on boot |
+| `launcher/` | Samsung home-screen launcher: apps, HDMI inputs, this dashboard |
 | `.claude/skills/plan-week/` | The Monday planning routine for Claude Code |
 
 ## Run it locally
@@ -172,6 +173,31 @@ adb shell appops set dev.framedashboard.tv SYSTEM_ALERT_WINDOW allow
 
 It runs full screen with the screen kept awake, reloads itself when the network
 comes back after boot, and refreshes every few hours to pick up new deploys.
+
+## Launcher (a quieter home screen)
+
+`launcher/` is a separate Tizen app: a clock, a row of apps (YouTube, Netflix,
+HBO Max, Spotify, Disney+, Prime Video and this dashboard) and a row of HDMI
+inputs, driven by the normal remote. It is adapted from
+[arn0-tv](https://github.com/NelsonEU/arn0-tv) by NelsonEU (MIT, see
+`launcher/LICENSE.arn0`), minus its hidden game and its Home-button helpers.
+
+```bash
+npm run launcher:preview                  # http://localhost:8080, arrows + Enter, Esc = Back
+npm run launcher:build                    # writes launcher/FrameLauncher.wgt (TIZEN_PROFILE as above)
+TV_IP=192.168.1.50 npm run launcher:install
+```
+
+Edit `launcher/src/js/config.js` for the apps and HDMI ports; Settings on the
+TV can also reorder apps and rename, add or hide inputs. Apps are found by
+name, so if one is missing press **Red** (All apps): the focused app's id is
+shown bottom-left, and you can pin it in `config.js` as `{ id: '…' }`.
+**Blue** opens the Lab screen, which tests HDMI switching methods.
+
+The launcher opens from the TV's app row like any other app. Making it the
+Home button target needs undocumented changes on the TV; see arn0-tv's
+[setup guide](https://github.com/NelsonEU/arn0-tv/blob/main/docs/setup-tv.md)
+for the method and its risks.
 
 ## Art
 

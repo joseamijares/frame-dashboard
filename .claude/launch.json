@@ -1,6 +1,23 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "dashboard", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 4321 }
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 4321
+    },
+    {
+      "name": "launcher",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "launcher:preview"
+      ],
+      "port": 8080
+    }
   ]
 }
