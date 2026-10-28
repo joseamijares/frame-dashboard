@@ -178,7 +178,10 @@ comes back after boot, and refreshes every few hours to pick up new deploys.
 
 `launcher/` is a separate Tizen app: a clock, a row of apps (YouTube, Netflix,
 HBO Max, Spotify, Disney+, Prime Video and this dashboard) and a row of HDMI
-inputs, driven by the normal remote. It is adapted from
+inputs, driven by the normal remote. It shares the dashboard's design: a
+painting from the collection fills the screen (a new one each day, credited
+bottom right), the time is set in Instrument Serif, and every app is the same
+bone label card with its logo printed in ink. It is adapted from
 [arn0-tv](https://github.com/NelsonEU/arn0-tv) by NelsonEU (MIT, see
 `launcher/LICENSE.arn0`), minus its hidden game and its Home-button helpers.
 
@@ -187,6 +190,12 @@ npm run launcher:preview                  # http://localhost:8080, arrows + Ente
 npm run launcher:build                    # writes launcher/FrameLauncher.wgt (TIZEN_PROFILE as above)
 TV_IP=192.168.1.50 npm run launcher:install
 ```
+
+The paintings are 12 landscapes from `lib/art.json`, cropped to 16:9 with the
+dark readability scrim baked in (the TV can't afford live gradients). To change
+them, edit `PICKS` in `launcher/scripts/paintings.mjs` and run
+`node launcher/scripts/paintings.mjs` (needs Google Chrome). **Green** on the
+remote hangs the next one.
 
 Edit `launcher/src/js/config.js` for the apps and HDMI ports; Settings on the
 TV can also reorder apps and rename, add or hide inputs. Apps are found by

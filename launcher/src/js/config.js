@@ -39,9 +39,12 @@ window.LAUNCHER_CONFIG = {
     locale: 'es-MX',
 
     theme: {
-        // Starting wallpaper (key from js/wallpapers.js), or null for none (plain gradient).
+        // Starting painting (key from js/wallpapers.js, made by scripts/paintings.mjs), or null
+        // for the plain salon wall. `rotate` hangs the next painting on that interval (a key from
+        // Wallpaper.INTERVALS; '1d' = a painting of the day), or null to keep this one.
         // Changed from Settings → Background; the TV remembers the choice.
-        wallpaper: null
+        wallpaper: 'hokusai-the-great-wave-off-kanagawa',
+        rotate: '1d'
     },
 
     /*

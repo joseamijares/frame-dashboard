@@ -42,12 +42,6 @@
         return (words[0] ? words[0][0] : '?') + (words[1] ? words[1][0] : '');
     }
 
-    function hue(text) {
-        var h = 0;
-        for (var i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 360;
-        return h;
-    }
-
     // Installed apps report a native path; it may or may not be readable from a web app.
     function tryIcon(tile, mono, path) {
         var img = new Image();
@@ -62,16 +56,12 @@
     function tileFace(item) {
         var tile = el('div', 'tile');
         if (item.brand) {
-            tile.style.background = item.brand.bg;
             if (item.brand.text) {
-                var word = el('div', 'wordmark', item.brand.text);
-                word.style.color = item.brand.fg;
-                tile.appendChild(word);
+                tile.appendChild(el('div', 'wordmark', item.brand.text));
             } else {
                 tile.appendChild(markEl(item.brand));
             }
         } else {
-            tile.style.background = 'hsl(' + hue(item.label) + ',32%,24%)';
             var mono = el('div', 'mono', initials(item.label).toUpperCase());
             tile.appendChild(mono);
             if (item.iconPath) tryIcon(tile, mono, item.iconPath);
@@ -97,7 +87,7 @@
     function allAppsTile() {
         var wrap = el('div', 'app');
         var tile = el('div', 'tile all-tile');
-        tile.innerHTML = '<svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/>' +
+        tile.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/>' +
             '<rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/>' +
             '<rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
         wrap.appendChild(tile);
@@ -107,10 +97,9 @@
     }
 
     function inputTile(input) {
-        var brand = findBrand(input.brand || '') || { bg: '#2a2f3a', fg: '#fff', mark: null };
+        var brand = findBrand(input.brand || '') || { mark: null };
         var wrap = el('div', 'input');
         var tile = el('div', 'tile');
-        tile.style.background = brand.bg;
         if (brand.mark) tile.appendChild(markEl(brand));
         var meta = el('div', 'meta');
         meta.appendChild(el('div', 'name', input.label));
@@ -129,7 +118,7 @@
     // Console tile for Settings lists: brand colours and logo only.
     function miniInputTile(input) {
         var brand = findBrand(input.brand || '');
-        return miniTile({ label: input.label, brand: brand && { key: brand.key, bg: brand.bg, fg: brand.fg, mark: brand.mark } });
+        return miniTile({ label: input.label, brand: brand && { key: brand.key, mark: brand.mark } });
     }
 
     // ---------- Home content

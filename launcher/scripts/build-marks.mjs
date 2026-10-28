@@ -1,5 +1,5 @@
-// Writes pre-coloured copies of the brand marks to src/img/tiles/<brand>.svg, using the `fg`
-// colour from src/js/brands.js. Plain <img> tiles are much cheaper on the TV than CSS masks.
+// Writes pre-coloured copies of the brand marks to src/img/tiles/<brand>.svg, using the
+// TILE_INK colour from src/js/brands.js. Plain <img> tiles are much cheaper on the TV than CSS masks.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import vm from 'node:vm';
@@ -15,7 +15,7 @@ for (const brand of sandbox.window.BRANDS) {
     const coloured = svg
         .replace(/<title>.*?<\/title>/, '')
         .replace(/\sfill="[^"]*"/g, '')
-        .replace(/<svg\b/, `<svg fill="${brand.fg}"`);
+        .replace(/<svg\b/, `<svg fill="${sandbox.window.TILE_INK}"`);
     await writeFile(resolve(src, 'img/tiles', brand.key + '.svg'), coloured);
 }
 console.log('Wrote coloured marks to src/img/tiles/');

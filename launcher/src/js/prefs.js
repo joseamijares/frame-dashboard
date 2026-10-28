@@ -17,9 +17,9 @@
                 preset: cfg.sound && cfg.sound.preset || 'soft'
             },
             wallpaper: {
-                mode: theme.wallpaper ? 'photo' : 'off',   // 'off' | 'photo' | 'rotate'
-                photo: theme.wallpaper || 'forest',
-                interval: '15m',        // see Wallpaper.INTERVALS
+                mode: theme.rotate ? 'rotate' : theme.wallpaper ? 'photo' : 'off',   // 'off' | 'photo' | 'rotate'
+                photo: theme.wallpaper || '',
+                interval: theme.rotate || '15m',   // see Wallpaper.INTERVALS
                 lastChange: 0
             },
             screensaver: {
@@ -32,7 +32,7 @@
                 clock: '24h',           // '24h' | '12h'
                 showDate: true,
                 locale: cfg.locale || 'en-GB',
-                font: 'manrope',        // see Appearance.FONTS
+                font: 'geist',          // see Appearance.FONTS
                 names: 'always'         // app names under tiles: 'always' | 'focused' | 'never'
             },
             home: null,                 // [{ id, label, brand }] once edited; null = config.js apps

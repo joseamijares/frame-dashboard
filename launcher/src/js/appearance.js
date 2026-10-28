@@ -3,6 +3,7 @@
     'use strict';
 
     var FONTS = [
+        { key: 'geist', label: 'Geist', family: '"Geist"' },
         { key: 'manrope', label: 'Manrope', family: '"Manrope"' },
         { key: 'inter', label: 'Inter', family: '"Inter"' },
         { key: 'outfit', label: 'Outfit', family: '"Outfit"' },

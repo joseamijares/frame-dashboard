@@ -20,6 +20,26 @@
  * This engine lacks `inset`, `aspect-ratio`, `overflow: clip`, the individual transform
  * properties, `color-mix()`, container queries and `:has()`. Grid, gap, sticky and `clamp()` work.
  */
+/* The dashboard's own type (public/fonts), so the launcher and the wall read as one design. */
+@font-face {
+    font-family: "Geist";
+    src: url("../fonts/geist.woff2") format("woff2");
+    font-weight: 400 600;
+}
+
+@font-face {
+    font-family: "Instrument Serif";
+    src: url("../fonts/instrument-serif-normal.woff2") format("woff2");
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "Instrument Serif";
+    font-style: italic;
+    src: url("../fonts/instrument-serif-italic.woff2") format("woff2");
+    font-weight: 400;
+}
+
 @font-face {
     font-family: "Manrope";
     src: url("../fonts/manrope.woff2") format("woff2");
@@ -45,12 +65,20 @@
 }
 
 :root {
-    --bg: #090b10;
-    --fg: #f4f5f7;
-    --muted: rgba(244, 245, 247, 0.55);
-    --faint: rgba(244, 245, 247, 0.5);
-    --ring: #ffffff;
-    --font: "Manrope", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+    /* The salon palette from public/styles.css: green-grey wall, bone cards, gilt. */
+    --bg: #111613;
+    --fg: #ece6d8;
+    --muted: rgba(236, 230, 216, 0.62);
+    --faint: rgba(236, 230, 216, 0.7);
+    --lichen: #b3b8ad;
+    --gilt: #c8a45c;
+    --gilt-light: #e2c487;  /* gilt text over a painting rather than the dark wall */
+    --card: #ece6d8;
+    --card-ink: #1e1a14;    /* = TILE_INK in js/brands.js */
+    --card-ink-2: #5a544a;
+    --ring: var(--gilt);
+    --font: "Geist", "SamsungOne", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
     --edge: 120px;
 }
 
@@ -82,7 +110,7 @@ html, body {
     left: 0;
     width: 1920px;
     height: 1080px;
-    background: var(--bg) url("../img/bg.jpg") center / cover no-repeat;
+    background: var(--bg) center / cover no-repeat;
     will-change: transform;
 }
 
@@ -107,29 +135,64 @@ h1, h2 {
 
 .clock {
     position: absolute;
-    top: 88px;
+    top: 92px;
     left: var(--edge);
+    /* Static, so it costs nothing per frame; keeps the time legible over a bright sky. */
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
 
 #time {
-    font-size: 132px;
-    font-weight: 300;
-    letter-spacing: -3px;
-    line-height: 1;
+    font-family: var(--serif);
+    font-size: 200px;
+    font-weight: 400;
+    letter-spacing: -4px;
+    line-height: 0.92;
 }
 
 #time-suffix {
-    margin-left: 14px;
-    font-size: 44px;
-    font-weight: 400;
-    letter-spacing: 0;
+    margin-left: 18px;
+    font-family: var(--font);
+    font-size: 30px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    vertical-align: 128px;
 }
 
 #date {
-    margin-top: 14px;
-    font-size: 34px;
+    margin-bottom: 18px;
+    font-size: 24px;
     font-weight: 500;
-    color: var(--muted);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gilt-light);
+}
+
+/* Painting credit, bottom right: title in italic serif over the artist, as on the wall. */
+.art-caption {
+    position: absolute;
+    right: var(--edge);
+    bottom: 44px;
+    max-width: 760px;
+    text-align: right;
+}
+
+.art-caption.hidden { display: none; }
+
+.art-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 34px;
+    line-height: 1.1;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.art-credit {
+    margin-top: 6px;
+    font-size: 20px;
+    color: var(--lichen);
 }
 
 /* Appearance options */
@@ -144,15 +207,16 @@ h1, h2 {
     right: 0;
 }
 
-#apps-section { top: 350px; }
-#inputs-section { top: 690px; }
+#apps-section { top: 536px; }
+#inputs-section { top: 812px; }
 
 .shelf h2 {
-    margin-bottom: 26px;
-    font-size: 24px;
-    letter-spacing: 0.16em;
+    margin-bottom: 22px;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--gilt-light);
 }
 
 .row-viewport {
@@ -170,14 +234,17 @@ h1, h2 {
 
 .app {
     flex: none;
-    width: 300px;
-    margin-right: 36px;
+    width: 252px;
+    margin-right: 28px;
 }
 
 .tile {
     position: relative;
-    height: 170px;
-    border-radius: 22px;
+    height: 150px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--card-ink);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
 }
 
 /* Home tiles get their own layer so focus scaling never repaints. The All apps grid has
@@ -188,9 +255,10 @@ h1, h2 {
 }
 
 .app .label {
-    margin-top: 18px;
-    font-size: 26px;
-    font-weight: 500;
+    margin-top: 14px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 30px;
     color: var(--faint);
     white-space: nowrap;
     overflow: hidden;
@@ -200,7 +268,7 @@ h1, h2 {
 .app.focused .tile,
 .input.focused .tile {
     transform: scale(1.07);
-    box-shadow: 0 0 0 5px var(--ring);
+    box-shadow: 0 0 0 4px var(--ring), 0 28px 60px rgba(0, 0, 0, 0.6);
 }
 
 .app.focused .label {
@@ -225,8 +293,8 @@ h1, h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 60px;
-    font-weight: 800;
+    font-size: 46px;
+    font-weight: 600;
     letter-spacing: -1px;
 }
 
@@ -239,10 +307,10 @@ h1, h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 64px;
-    font-weight: 700;
-    letter-spacing: -1px;
-    color: rgba(255, 255, 255, 0.9);
+    font-family: var(--serif);
+    font-size: 72px;
+    font-weight: 400;
+    color: var(--card-ink);
 }
 
 .icon {
@@ -255,8 +323,15 @@ h1, h2 {
     object-fit: contain;
 }
 
+/* All apps: the same card turned over, an outline in place of a label. */
 .all-tile {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(17, 22, 19, 0.55);
+    color: var(--fg);
+    box-shadow: inset 0 0 0 2px rgba(236, 230, 216, 0.45);
+}
+
+.app.focused .all-tile {
+    box-shadow: inset 0 0 0 2px rgba(236, 230, 216, 0.45), 0 0 0 4px var(--ring), 0 28px 60px rgba(0, 0, 0, 0.6);
 }
 
 .all-tile svg {
@@ -272,15 +347,15 @@ h1, h2 {
 
 .input {
     flex: none;
-    width: 536px;
-    margin-right: 36px;
+    width: 400px;
+    margin-right: 28px;
 }
 
 .input .tile {
-    height: 190px;
+    height: 112px;
     display: flex;
     align-items: center;
-    padding: 0 40px;
+    padding: 0 34px;
 }
 
 .input .mark {
@@ -288,9 +363,9 @@ h1, h2 {
     top: auto;
     left: auto;
     flex: none;
-    width: 80px;
-    height: 80px;
-    margin-right: 30px;
+    width: 58px;
+    height: 58px;
+    margin-right: 26px;
 }
 
 .input .meta {
@@ -298,9 +373,10 @@ h1, h2 {
 }
 
 .input .name {
-    font-size: 34px;
-    font-weight: 700;
-    color: #fff;
+    font-family: var(--serif);
+    font-size: 40px;
+    font-weight: 400;
+    color: var(--card-ink);
     line-height: 1.15;
     white-space: nowrap;
     overflow: hidden;
@@ -308,10 +384,12 @@ h1, h2 {
 }
 
 .input .port {
-    margin-top: 10px;
-    font-size: 24px;
+    margin-top: 4px;
+    font-size: 17px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--card-ink-2);
 }
 
 .dot {
@@ -320,11 +398,11 @@ h1, h2 {
     height: 14px;
     margin-right: 12px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(30, 26, 20, 0.25);
     vertical-align: 1px;
 }
 
-.dot.on { background: #4ade80; }
+.dot.on { background: #4f8a5b; }
 
 
 /* Gear (Settings) */
@@ -336,7 +414,7 @@ h1, h2 {
     width: 76px;
     height: 76px;
     border-radius: 50%;
-    color: var(--muted);
+    color: var(--fg);
     will-change: transform;
     transition: transform 0.1s ease-out;
 }
@@ -359,7 +437,7 @@ h1, h2 {
 
 /* Static dim layer so pages stay readable over any wallpaper. */
 .page {
-    background: rgba(9, 11, 16, 0.8);
+    background: rgba(17, 22, 19, 0.88);
 }
 
 /* ---------- All apps ---------- */
@@ -377,7 +455,9 @@ h1, h2 {
 }
 
 .page-head h1 {
-    font-size: 72px;
+    font-family: var(--serif);
+    font-size: 84px;
+    font-weight: 400;
     color: var(--fg);
     letter-spacing: -1px;
 }
@@ -509,7 +589,7 @@ h1, h2 {
 }
 
 .chip.on {
-    background: rgba(62, 142, 255, 0.35);
+    background: rgba(200, 164, 92, 0.35);
     color: var(--fg);
 }
 
@@ -606,8 +686,8 @@ h1, h2 {
 }
 
 .ed-item.moving {
-    background: #3e8eff;
-    color: #fff;
+    background: var(--gilt);
+    color: var(--card-ink);
 }
 
 .ed-move {
@@ -623,7 +703,8 @@ h1, h2 {
 
 .mini .tile {
     height: 54px;
-    border-radius: 10px;
+    border-radius: 4px;
+    box-shadow: none;
 }
 
 .mini .wordmark { font-size: 22px; letter-spacing: 0; }
@@ -769,7 +850,7 @@ footer {
     text-align: center;
     padding: 22px 34px;
     border-radius: 16px;
-    background: #23262e;
+    background: #1d2420;
     color: var(--fg);
     font-size: 28px;
     font-weight: 500;
@@ -805,7 +886,7 @@ html.preview, html.preview body {
     display: flex;
     gap: 40px;
     font-size: 22px;
-    color: #a3a8b3;
+    color: var(--lichen);
 }
 
 .hints.hidden { display: none; }
