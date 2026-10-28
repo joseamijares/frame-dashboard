@@ -1,0 +1,578 @@
+/* Home, All apps and Lab screens; app list loading, launching and HDMI inputs. */
+(function () {
+    'use strict';
+
+    var CACHE_KEY = 'frame.launcher.apps.v1';
+    var REFRESH_AFTER_MS = 5 * 60 * 1000;
+    var GRID_COLS = 5;
+
+    var cfg = window.LAUNCHER_CONFIG;
+    var log = DevLog.log;
+    var $ = UI.$;
+    var el = UI.el;
+    var KEY = UI.KEY;
+
+    var state = {
+        apps: [],              // launchable apps from the TV (or the cache)
+        appsSig: null,
+        lastFetch: 0,
+        showEverything: false, // All apps: bypass the consumer filter
+        tvMode: false,         // HDMI shown inside the launcher
+        moving: null,          // app tile picked up for reordering
+        hdmi: {},              // last known { port: connected }
+        labLogBound: false     // renderLab can run again; the log listener is added once
+    };
+
+    // ---------- Tiles
+
+    // Pre-coloured by scripts/build-marks.mjs
+    function markEl(brand) {
+        var m = new Image();
+        m.className = 'mark';
+        m.src = 'img/tiles/' + brand.key + '.svg';
+        if (brand.pad) {
+            m.style.top = brand.pad[0] + '%';
+            m.style.height = (100 - 2 * brand.pad[0]) + '%';
+            m.style.left = brand.pad[1] + '%';
+            m.style.width = (100 - 2 * brand.pad[1]) + '%';
+        }
+        return m;
+    }
+
+    function initials(label) {
+        var words = label.replace(/[^\w\s+]/g, ' ').trim().split(/\s+/);
+        return (words[0] ? words[0][0] : '?') + (words[1] ? words[1][0] : '');
+    }
+
+    // Installed apps report a native path; it may or may not be readable from a web app.
+    function tryIcon(tile, mono, path) {
+        var img = new Image();
+        img.className = 'icon';
+        img.onload = function () {
+            mono.style.display = 'none';
+            tile.appendChild(img);
+        };
+        img.src = path.charAt(0) === '/' ? 'file://' + path : path;
+    }
+
+    function tileFace(item) {
+        var tile = el('div', 'tile');
+        if (item.brand) {
+            if (item.brand.text) {
+                tile.appendChild(el('div', 'wordmark', item.brand.text));
+            } else {
+                tile.appendChild(markEl(item.brand));
+            }
+        } else {
+            var mono = el('div', 'mono', initials(item.label).toUpperCase());
+            tile.appendChild(mono);
+            if (item.iconPath) tryIcon(tile, mono, item.iconPath);
+        }
+        return tile;
+    }
+
+    function appTile(item) {
+        var wrap = el('div', 'app');
+        wrap.appendChild(tileFace(item));
+        wrap.appendChild(el('div', 'label', item.label));
+        wrap._item = item;
+        return wrap;
+    }
+
+    // Small tile used in Settings lists.
+    function miniTile(item) {
+        var wrap = el('div', 'mini');
+        wrap.appendChild(tileFace(item));
+        return wrap;
+    }
+
+    function allAppsTile() {
+        var wrap = el('div', 'app');
+        var tile = el('div', 'tile all-tile');
+        tile.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/>' +
+            '<rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/>' +
+            '<rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>';
+        wrap.appendChild(tile);
+        wrap.appendChild(el('div', 'label', 'All apps'));
+        wrap._item = { kind: 'all' };
+        return wrap;
+    }
+
+    function inputTile(input) {
+        var brand = findBrand(input.brand || '') || { mark: null };
+        var wrap = el('div', 'input');
+        var tile = el('div', 'tile');
+        if (brand.mark) tile.appendChild(markEl(brand));
+        var meta = el('div', 'meta');
+        meta.appendChild(el('div', 'name', input.label));
+        var port = el('div', 'port');
+        var dot = el('span', 'dot');
+        port.appendChild(dot);
+        port.appendChild(document.createTextNode('HDMI ' + input.hdmi));
+        meta.appendChild(port);
+        tile.appendChild(meta);
+        wrap.appendChild(tile);
+        wrap._item = { kind: 'input', hdmi: input.hdmi, label: input.label, method: input.method };
+        wrap._dot = dot;
+        return wrap;
+    }
+
+    // Console tile for Settings lists: brand colours and logo only.
+    function miniInputTile(input) {
+        var brand = findBrand(input.brand || '');
+        return miniTile({ label: input.label, brand: brand && { key: brand.key, mark: brand.mark } });
+    }
+
+    // ---------- Home content
+
+    // Consoles: edited list from Settings, else config.js.
+    function inputs() {
+        return Prefs.get().inputs || cfg.inputs || [];
+    }
+
+    function setInputs(list) {
+        Prefs.get().inputs = list;
+        Prefs.save();
+        renderHome();
+    }
+
+    // Entries shown on Home: edited list from Settings, else config.js.
+    function homeEntries() {
+        return Prefs.get().home || cfg.apps || [];
+    }
+
+    function homeItems() {
+        return Apps.curated(state.apps, { apps: homeEntries() });
+    }
+
+    function setHomeItems(items) {
+        Prefs.get().home = items.map(function (i) {
+            var entry = { id: i.id, label: i.label };
+            if (i.brand) entry.brand = i.brand.key;
+            if (i.match) entry.match = i.match;
+            return entry;
+        });
+        Prefs.save();
+        renderHome();
+    }
+
+    function renderHome() {
+        var row = $('apps-row');
+        row.innerHTML = '';
+        var items = homeItems();
+        if (!items.length) items = Apps.allSorted(state.apps, false).slice(0, 8);
+        items.forEach(function (item) { row.appendChild(appTile(item)); });
+        row.appendChild(allAppsTile());
+
+        var row2 = $('inputs-row');
+        row2.innerHTML = '';
+        inputs().forEach(function (input) {
+            if (!input.hidden) row2.appendChild(inputTile(input));
+        });
+        $('inputs-section').classList.toggle('hidden', !row2.children.length);
+        applyInputStatus();
+        if (UI.isVisible('home')) UI.refresh();
+    }
+
+    function applyInputStatus() {
+        UI.children($('inputs-row')).forEach(function (tile) {
+            tile._dot.classList.toggle('on', state.hdmi[tile._item.hdmi] === true);
+        });
+    }
+
+    function refreshInputStatus() {
+        if (!inputs().length) return;
+        Inputs.hdmiStatus().then(function (status) {
+            state.hdmi = status;
+            applyInputStatus();
+        }).catch(function (err) {
+            log('Input status unavailable: ' + DevLog.errorText(err));
+        });
+    }
+
+    function renderAll() {
+        var grid = $('all-grid');
+        grid.innerHTML = '';
+        UI.resetScroll(grid);
+        var items = Apps.allSorted(state.apps, state.showEverything);
+        items.forEach(function (item) { grid.appendChild(appTile(item)); });
+        $('all-count').textContent = items.length + ' apps';
+    }
+
+    function renderLab() {
+        var actions = [
+            { label: 'Send installed app list to log', run: labDumpApps },
+            { label: 'Read inputs', run: labReadInputs },
+            { label: 'Open Samsung TV viewer only', run: function () { runLogged('Open TV viewer', Inputs.openViewer()); } }
+        ];
+        if (window.Sound) actions = actions.concat(Sound.actions());
+        if (window.Weather) actions = actions.concat(Weather.actions());
+        if (window.RenderProbe) actions = actions.concat(RenderProbe.actions());
+        if (window.PlatformProbe) actions = actions.concat(PlatformProbe.actions());
+        inputs().forEach(function (input) {
+            var item = { kind: 'input', hdmi: input.hdmi, label: input.label };
+            var name = input.label + ' (HDMI ' + input.hdmi + ')';
+            actions.push({ label: name + ': switch + viewer', run: function () { openInput(item, 'switch+viewer'); } });
+            actions.push({ label: name + ': switch only', run: function () { openInput(item, 'switch'); } });
+            actions.push({ label: name + ': inside launcher', run: function () { openInput(item, 'inapp'); } });
+        });
+        var list = $('lab-list');
+        list.innerHTML = '';
+        actions.forEach(function (a) {
+            var li = el('li', '', a.label);
+            li._item = { kind: 'lab', run: a.run };
+            list.appendChild(li);
+        });
+        if (!state.labLogBound) {
+            state.labLogBound = true;
+            DevLog.onLine(function () {
+                $('lab-log').textContent = DevLog.lines().slice(-26).join('\n');
+            });
+        }
+    }
+
+    // ---------- Actions
+
+    function runLogged(what, promise) {
+        log(what + '…');
+        return promise.then(function (v) {
+            log(what + ': ok');
+            return v;
+        }, function (err) {
+            log(what + ': FAILED ' + DevLog.errorText(err));
+            throw err;
+        });
+    }
+
+    function launchApp(item) {
+        runLogged('Launch ' + item.id, Apps.launch(item.id)).catch(function (err) {
+            UI.toast('Could not open ' + item.label + ': ' + DevLog.errorText(err));
+        });
+    }
+
+    function openInput(item, method) {
+        method = method || item.method || cfg.inputMethod;
+        UI.toast('Switching to ' + item.label + '…');
+        runLogged('Input HDMI ' + item.hdmi + ' via ' + method, Inputs.open(item.hdmi, method)).then(function (result) {
+            log('Current source now: ' + Inputs.describeSource(Inputs.current()));
+            if (result === 'inapp') enterTvMode();
+        }).catch(function (err) {
+            UI.toast('Could not switch to ' + item.label + ': ' + DevLog.errorText(err));
+        });
+    }
+
+    function enterTvMode() {
+        state.tvMode = true;
+        document.documentElement.classList.add('tv-mode');
+    }
+
+    function exitTvMode() {
+        state.tvMode = false;
+        document.documentElement.classList.remove('tv-mode');
+        Inputs.hide().catch(function (err) { log('Hide input failed: ' + DevLog.errorText(err)); });
+    }
+
+    function labDumpApps() {
+        runLogged('App list', Apps.getInstalledApps()).then(function (apps) {
+            log('apps: ' + apps.length + ' total, ' + apps.filter(function (a) { return a.show; }).length + ' with show=true',
+                apps.map(Apps.describe));
+            UI.toast('Sent ' + apps.length + ' apps to the log');
+        }).catch(function () {});
+    }
+
+    function labReadInputs() {
+        runLogged('Inputs', Inputs.sources()).then(function (info) {
+            var fmt = function (list) { return (list || []).map(Inputs.describeSource).join(', ') || 'none'; };
+            log('connected: ' + fmt(info.connected));
+            log('disconnected: ' + fmt(info.disconnected));
+            log('current: ' + Inputs.describeSource(Inputs.current()));
+        }).catch(function () {});
+    }
+
+    function nextWallpaper() {
+        var w = Wallpaper.next();
+        if (w) UI.toast(w.title + (w.credit ? ' · ' + w.credit : ''));
+    }
+
+    // Colour keys are hidden shortcuts; everything is also reachable from Settings.
+    function colourKey(k, view) {
+        if (k === KEY.RED || k === KEY.R) {
+            UI.show(view === 'all' ? 'home' : 'all');
+        } else if (k === KEY.GREEN || k === KEY.G) {
+            if (view === 'home') nextWallpaper();
+        } else if (k === KEY.BLUE || k === KEY.B) {
+            UI.show(view === 'lab' ? 'home' : 'lab');
+        } else if (k === KEY.YELLOW || k === KEY.Y) {
+            if (view === 'all') {
+                state.showEverything = !state.showEverything;
+                UI.show('all', { back: true });
+            } else return false;
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    // ---------- Clock, data, lifecycle
+
+    function updateClock() {
+        var d = new Date();
+        var t = Appearance.time(d);
+        $('time-main').textContent = t.time;
+        $('time-suffix').textContent = t.suffix;
+        $('date').textContent = Appearance.date(d);
+    }
+
+    // The TV takes ~4 s to list its ~450 apps, so Home is drawn from the last list we saw
+    // and only redrawn if a fresh list differs.
+    function readCache() {
+        try {
+            return JSON.parse(localStorage.getItem(CACHE_KEY));
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function writeCache(apps) {
+        try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(apps));
+        } catch (e) {
+            // Without the cache we only lose the fast start.
+        }
+    }
+
+    var listeners = [];
+
+    function setApps(apps) {
+        var sig = apps.map(function (a) { return a.id + '|' + a.name + '|' + a.show; }).join(',');
+        if (sig === state.appsSig) return;
+        state.appsSig = sig;
+        state.apps = apps;
+        renderHome();
+        if (UI.isVisible('all')) UI.show('all', { back: true });
+        listeners.forEach(function (fn) { fn(); });
+    }
+
+    function loadApps() {
+        state.lastFetch = Date.now();
+        return Apps.getInstalledApps().then(function (apps) {
+            var list = Apps.launchable(apps).map(function (a) {
+                return { id: a.id, name: a.name, show: a.show, iconPath: a.iconPath || '' };
+            });
+            writeCache(list);
+            setApps(list);
+        }).catch(function (err) {
+            // Let the next return to Home try again instead of waiting out REFRESH_AFTER_MS.
+            state.lastFetch = 0;
+            UI.toast('Could not list apps: ' + DevLog.errorText(err));
+            log('App list failed: ' + DevLog.errorText(err));
+        });
+    }
+
+    function registerKeys() {
+        try {
+            tizen.tvinputdevice.registerKeyBatch(['ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue']);
+        } catch (e) {
+            log('Colour keys unavailable: ' + DevLog.errorText(e));
+        }
+    }
+
+    // ---------- Reorder: hold OK on an app tile, move it with ◀ ▶, OK or Back drops it
+
+    var HOLD_MS = 650;
+    var press = null;        // { tile, timer, repeats } while OK is down on an app tile
+    var keyupWorks = false;  // set by the first keyup we see; some remotes only repeat keydown
+    var held = false;        // OK still down after the pickup: its repeats must not drop the tile
+    var lastEnterAt = 0;
+
+    function appTiles() {
+        return UI.children($('apps-row')).filter(function (t) { return t._item.kind === 'app'; });
+    }
+
+    function focusedAppTile() {
+        var tile = document.querySelector('#apps-row .app.focused');
+        return tile && tile._item.kind === 'app' ? tile : null;
+    }
+
+    function startMoving(tile) {
+        state.moving = tile;
+        held = true;
+        tile.classList.add('moving');
+        UI.refreshHints();
+        if (window.Sound) Sound.play('select');
+    }
+
+    function shift(dir) {
+        var tile = state.moving;
+        var tiles = appTiles();
+        var at = tiles.indexOf(tile);
+        var to = at + dir;
+        if (to < 0 || to >= tiles.length) {
+            if (window.Sound) Sound.play('edge');
+            return;
+        }
+        var row = $('apps-row');
+        if (dir > 0) row.insertBefore(tiles[to], tile);
+        else row.insertBefore(tile, tiles[to]);
+        UI.focusOn(tile);
+        if (window.Sound) Sound.play('move');
+    }
+
+    function stopMoving() {
+        var tile = state.moving;
+        state.moving = null;
+        tile.classList.remove('moving');
+        var id = tile._item.id;
+        setHomeItems(appTiles().map(function (t) { return t._item; }));
+        // renderHome rebuilt the row; put focus back on the tile that moved.
+        var again = appTiles().find(function (t) { return t._item.id === id; });
+        if (again) UI.focusOn(again);
+        UI.refreshHints();
+    }
+
+    function settlePress(asHold) {
+        var p = press;
+        press = null;
+        clearTimeout(p.timer);
+        if (asHold) startMoving(p.tile);
+        else launchApp(p.tile._item);
+    }
+
+    // Home's own keys: OK on an app tile waits to tell a tap from a hold; while a tile is
+    // picked up, ◀ ▶ move it and everything else is swallowed until it is dropped.
+    function homeKey(k) {
+        var now = Date.now();
+        var enterGap = k === KEY.ENTER ? now - lastEnterAt : Infinity;
+        if (k === KEY.ENTER) lastEnterAt = now;
+        if (state.moving) {
+            // Without keyup, a repeat is an OK that follows the last one within auto-repeat pace.
+            if (held && k === KEY.ENTER && (keyupWorks || enterGap < 300)) return true;
+            held = false;
+            if (k === KEY.LEFT) shift(-1);
+            else if (k === KEY.RIGHT) shift(1);
+            else if (k === KEY.ENTER || k === KEY.BACK || k === KEY.ESC || k === KEY.BACKSPACE) stopMoving();
+            return true;
+        }
+        if (k !== KEY.ENTER) return false;
+        if (press) {
+            // Auto-repeat while the button is held
+            press.repeats++;
+            return true;
+        }
+        var tile = focusedAppTile();
+        if (!tile) return false;
+        press = { tile: tile, repeats: 0 };
+        press.timer = setTimeout(function () {
+            // Held if the key is still down (keyup works and hasn't come) or is repeating.
+            settlePress(keyupWorks || press.repeats > 0);
+        }, HOLD_MS);
+        return true;
+    }
+
+    document.addEventListener('keyup', function (e) {
+        if (e.keyCode !== KEY.ENTER) return;
+        keyupWorks = true;
+        held = false;
+        if (press) settlePress(false);
+    });
+
+    function registerViews() {
+        UI.register('home', {
+            el: $('home'),
+            startRow: 1,
+            hints: function () {
+                return state.moving
+                    ? [['◀ ▶', 'Move'], ['OK', 'Done']]
+                    : [['OK', 'Open'], ['Hold OK', 'Move'], ['▲', 'Settings']];
+            },
+            rows: function () {
+                return [[$('gear')], UI.children($('apps-row')), UI.children($('inputs-row'))];
+            },
+            onKey: homeKey,
+            activate: function (item) {
+                if (item.kind === 'app') launchApp(item);
+                else if (item.kind === 'all') UI.show('all');
+                else if (item.kind === 'input') openInput(item);
+                else if (item.kind === 'settings') UI.show('settings');
+            },
+            // Home is the root: Back does nothing.
+            onBack: function () { return true; }
+        });
+        $('gear')._item = { kind: 'settings' };
+
+        UI.register('all', {
+            el: $('all'),
+            rows: function () { return UI.chunk(UI.children($('all-grid')), GRID_COLS); },
+            onShow: renderAll,
+            // The id to pin in config.js, for the app under the cursor
+            onFocus: function (target) {
+                $('app-id').textContent = target._item && target._item.id || '';
+            },
+            activate: launchApp,
+            hints: [['OK', 'Open'], ['Back', 'Home']]
+        });
+
+        UI.register('lab', {
+            el: $('lab'),
+            rows: function () { return UI.children($('lab-list')).map(function (li) { return [li]; }); },
+            activate: function (item) { item.run(); },
+            hints: [['OK', 'Run'], ['Back', 'Home']]
+        });
+    }
+
+    function init() {
+        registerKeys();
+        registerViews();
+        UI.setColourKey(colourKey);
+        UI.setKeyHook(function (k) {
+            if (state.tvMode) {
+                if (k === KEY.BACK || k === KEY.ESC || k === KEY.BACKSPACE) exitTvMode();
+                return true;
+            }
+            return false;
+        });
+        Appearance.apply();
+        updateClock();
+        setInterval(updateClock, 10000);
+        renderLab();
+        var cached = readCache();
+        if (cached && cached.length) setApps(cached);
+        else renderHome();
+        UI.show('home');
+        Wallpaper.start();
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                if (state.tvMode) exitTvMode();
+                return;
+            }
+            updateClock();
+            refreshInputStatus();
+            if (UI.isVisible('home')) Wallpaper.homeShown();
+            if (Date.now() - state.lastFetch > REFRESH_AFTER_MS) setTimeout(loadApps, 1500);
+        });
+        // With a cache, let the first frames and key presses through before the slow app list.
+        setTimeout(loadApps, cached ? 2000 : 0);
+        refreshInputStatus();
+        log('Launcher started');
+    }
+
+    window.Home = {
+        init: init,
+        apps: function () { return state.apps; },
+        homeItems: homeItems,
+        setHomeItems: setHomeItems,
+        inputs: inputs,
+        setInputs: setInputs,
+        hdmiStatus: function () { return state.hdmi; },
+        // An HDMI input shown inside the launcher: no screen saver over it.
+        tvMode: function () { return state.tvMode; },
+        refreshInputStatus: refreshInputStatus,
+        renderLab: renderLab,
+        updateClock: updateClock,
+        reloadApps: loadApps,
+        miniTile: miniTile,
+        miniInputTile: miniInputTile,
+        onAppsChanged: function (fn) { listeners.push(fn); }
+    };
+})();

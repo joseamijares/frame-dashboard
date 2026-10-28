@@ -9,7 +9,10 @@
     "shell:config": "node --env-file-if-exists=.env.local scripts/shell-config.mjs",
     "android:build": "npm run shell:config && cd android && ./gradlew assembleRelease",
     "tizen:build": "npm run shell:config && sh scripts/tizen.sh build",
-    "tizen:install": "sh scripts/tizen.sh install"
+    "tizen:install": "sh scripts/tizen.sh install",
+    "launcher:preview": "node launcher/scripts/serve.mjs",
+    "launcher:build": "sh launcher/scripts/tizen.sh build",
+    "launcher:install": "sh launcher/scripts/tizen.sh install"
   },
   "license": "MIT",
   "dependencies": {

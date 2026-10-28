@@ -17,3 +17,7 @@ tizen/dashboard-url.js
 android/dashboard.properties
 assets/mockup/
 .env*.local
+launcher/src/js/config.local.js
+launcher/.buildResult/
+launcher/src/.buildResult/
+launcher/logs/

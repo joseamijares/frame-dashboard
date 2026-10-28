@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Frame Launcher</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="stage">
+        <div id="bg"></div>
+
+        <section id="home" class="view">
+            <header class="clock">
+                <div id="date"></div>
+                <div id="time"><span id="time-main"></span><span id="time-suffix"></span></div>
+            </header>
+            <!-- The painting on the wall, credited like the dashboard's placard. -->
+            <div id="art-caption" class="art-caption hidden">
+                <div id="art-title" class="art-title"></div>
+                <div id="art-credit" class="art-credit"></div>
+            </div>
+            <div id="gear" class="gear">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3.2"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </div>
+            <div id="apps-section" class="shelf">
+                <h2>Apps</h2>
+                <div class="row-viewport"><div id="apps-row" class="row-track"></div></div>
+            </div>
+            <div id="inputs-section" class="shelf">
+                <h2>Inputs</h2>
+                <div class="row-viewport"><div id="inputs-row" class="row-track"></div></div>
+            </div>
+        </section>
+
+        <section id="all" class="view page hidden">
+            <header class="page-head">
+                <h1>All apps</h1>
+                <div id="all-count"></div>
+            </header>
+            <div class="grid-viewport"><div id="all-grid" class="grid"></div></div>
+            <footer><div id="app-id" class="app-id"></div></footer>
+        </section>
+
+        <section id="settings" class="view page hidden">
+            <header class="page-head"><h1>Settings</h1></header>
+            <ul class="settings-list two-col"></ul>
+        </section>
+
+        <section id="bg-settings" class="view page hidden">
+            <header class="page-head"><h1>Background</h1></header>
+            <div id="bg-body" class="settings-body">
+                <div class="setting-block">
+                    <h2>Wallpaper</h2>
+                    <div id="bg-mode" class="chips"></div>
+                </div>
+                <div id="bg-interval-block" class="setting-block">
+                    <h2>Change every</h2>
+                    <div id="bg-interval" class="chips"></div>
+                </div>
+                <div id="bg-photos-block" class="setting-block">
+                    <h2>Photo</h2>
+                    <div id="bg-photos" class="thumbs"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="consoles" class="view page hidden">
+            <header class="page-head"><h1>Inputs</h1></header>
+            <ul class="settings-list"></ul>
+        </section>
+
+        <section id="appearance" class="view page hidden">
+            <header class="page-head"><h1>Appearance</h1></header>
+            <div id="appearance-body" class="settings-body compact"></div>
+        </section>
+
+        <section id="sound-settings" class="view page hidden">
+            <header class="page-head"><h1>Navigation sound</h1></header>
+            <div id="sound-body" class="settings-body compact"></div>
+        </section>
+
+        <section id="advanced" class="view page hidden">
+            <header class="page-head"><h1>Advanced</h1></header>
+            <ul class="settings-list"></ul>
+        </section>
+
+        <section id="homeapps" class="view page hidden">
+            <header class="page-head">
+                <h1>Apps on Home</h1>
+            </header>
+            <div class="ed-col ed-left">
+                <h2 id="ed-home-title"></h2>
+                <div class="vport"><div id="ed-home" class="vtrack"></div></div>
+            </div>
+            <div class="ed-col ed-right">
+                <h2 id="ed-other-title"></h2>
+                <div class="vport"><div id="ed-other" class="vtrack"></div></div>
+            </div>
+        </section>
+
+        <section id="lab" class="view page hidden">
+            <header class="page-head">
+                <h1>Lab</h1>
+                <div>Tests for the TV. Results go to the log (and to the Mac if devLogUrl is set).</div>
+            </header>
+            <ul id="lab-list" class="lab-list"></ul>
+            <pre id="lab-log" class="lab-log"></pre>
+        </section>
+
+        <section id="screensaver-settings" class="view page hidden">
+            <header class="page-head"><h1>Screen saver</h1></header>
+            <div id="screensaver-body" class="settings-body compact"></div>
+        </section>
+
+        <!-- Two photo layers so one can decode and zoom from scratch while the other fades out. -->
+        <section id="screensaver" class="view hidden">
+            <div id="ss-photo-a" class="ss-photo"></div>
+            <div id="ss-photo-b" class="ss-photo"></div>
+            <div class="ss-scrim"></div>
+            <div id="ss-caption" class="ss-caption">
+                <div id="ss-title" class="ss-title"></div>
+            </div>
+            <div id="ss-clock" class="ss-clock pos-0">
+                <div id="ss-weather" class="ss-weather hidden">
+                    <div class="ss-wx-now">
+                        <span id="ss-wx-icon" class="ss-wx-icon"></span>
+                        <span id="ss-wx-temp" class="ss-wx-temp"></span>
+                    </div>
+                    <div id="ss-wx-detail" class="ss-wx-detail"></div>
+                </div>
+                <div class="ss-clock-main">
+                    <div id="ss-time" class="ss-time"></div>
+                    <div id="ss-date" class="ss-date"></div>
+                </div>
+            </div>
+            <div id="ss-dark" class="ss-dark"></div>
+        </section>
+
+
+        <div id="rename" class="view overlay hidden">
+            <div class="menu-box">
+                <div class="dialog-title">Name</div>
+                <input id="rename-input" type="text" maxlength="28" autocomplete="off" spellcheck="false">
+            </div>
+        </div>
+
+        <div id="menu" class="view overlay hidden">
+            <div class="menu-box">
+                <div id="menu-title"></div>
+                <ul id="menu-list"></ul>
+            </div>
+        </div>
+
+        <!-- Per-screen remote hints, filled by UI.show from each view's `hints`. -->
+        <div id="hints" class="hints"></div>
+
+        <div id="toast"></div>
+    </div>
+
+    <!-- tizen-mock.js does nothing on the TV (window.tizen already exists) -->
+    <script src="js/tizen-mock.js"></script>
+    <!-- Gitignored per-TV overrides, merged by config.js below. Empty unless you create it. -->
+    <script src="js/config.local.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/brands.js"></script>
+    <script src="js/wallpapers.js"></script>
+    <script src="js/devlog.js"></script>
+    <script src="js/prefs.js"></script>
+    <script src="js/apps.js"></script>
+    <script src="js/inputs.js"></script>
+    <script src="js/wallpaper.js"></script>
+    <script src="js/appearance.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/render-probe.js"></script>
+    <script src="js/platform-probe.js"></script>
+    <script src="js/screensaver.js"></script>
+    <script src="js/home.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/boot.js"></script>
+</body>
+</html>
