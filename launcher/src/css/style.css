@@ -425,6 +425,11 @@ h1, h2 {
     transition: transform 0.1s ease-out;
 }
 
+/* Exit sits just left of the gear. */
+.gear.exit {
+    right: calc(var(--edge) + 100px);
+}
+
 .gear svg {
     position: absolute;
     top: 16px;

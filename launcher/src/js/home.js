@@ -483,10 +483,10 @@
             hints: function () {
                 return state.moving
                     ? [['◀ ▶', 'Move'], ['OK', 'Done']]
-                    : [['OK', 'Open'], ['Hold OK', 'Move'], ['▲', 'Settings']];
+                    : [['OK', 'Open'], ['Hold OK', 'Move'], ['▲', 'Settings, Exit']];
             },
             rows: function () {
-                return [[$('gear')], UI.children($('apps-row')), UI.children($('inputs-row'))];
+                return [[$('exit'), $('gear')], UI.children($('apps-row')), UI.children($('inputs-row'))];
             },
             onKey: homeKey,
             activate: function (item) {
@@ -494,11 +494,13 @@
                 else if (item.kind === 'all') UI.show('all');
                 else if (item.kind === 'input') openInput(item);
                 else if (item.kind === 'settings') UI.show('settings');
+                else if (item.kind === 'exit') Settings.openSamsungHome();
             },
             // Home is the root: Back does nothing.
             onBack: function () { return true; }
         });
         $('gear')._item = { kind: 'settings' };
+        $('exit')._item = { kind: 'exit' };
 
         UI.register('all', {
             el: $('all'),

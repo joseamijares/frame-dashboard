@@ -14,11 +14,24 @@
     }
   }
 
+  // The home-screen launcher in launcher/ (launcher/src/config.xml).
+  var LAUNCHER_ID = 'FrmLnchr01.Launcher';
+
   function exitApp() {
     try {
       tizen.application.getCurrentApplication().exit();
     } catch (e) {
       window.close();
+    }
+  }
+
+  // Back opens the launcher, then closes this app. Without the launcher
+  // installed it just closes, as before.
+  function backToLauncher() {
+    try {
+      tizen.application.launch(LAUNCHER_ID, exitApp, exitApp);
+    } catch (e) {
+      exitApp();
     }
   }
 
@@ -39,7 +52,15 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.keyCode === 10009) exitApp(); // Back / Return
+    if (e.keyCode === 10009) backToLauncher(); // Back / Return
+  });
+
+  // Once the dashboard has focus its keys stay inside the iframe, so the
+  // page reports Back itself (public/app.js).
+  window.addEventListener('message', function (e) {
+    if (e.source === frame.contentWindow && e.data && e.data.type === 'frame-dashboard:back') {
+      backToLauncher();
+    }
   });
 
   // Back from Art Mode or another input: screensaver off again, and reload

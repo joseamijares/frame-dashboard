@@ -806,6 +806,10 @@
     } else if (k === 38 || k === 40) {
       state.selected = null;
       render();
+    } else if (k === 10009 && window.parent !== window) {
+      // Back: the TV shell framing this page (tizen/main.js) never sees our
+      // keys, so tell it; it opens the launcher.
+      window.parent.postMessage({ type: 'frame-dashboard:back' }, '*');
     } else return;
     e.preventDefault();
   });
