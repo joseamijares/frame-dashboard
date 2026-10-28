@@ -66,6 +66,7 @@
     var photoToken = 0;
     var photoIndex = 0;
     var openedAt = 0;
+    var weatherCheckedAt = 0;
     var nextPhotoAt = 0;
     var nextClockMoveAt = 0;
     var nextPanAt = 0;
@@ -294,6 +295,13 @@
     function tick() {
         var now = Date.now();
         updateClock();
+        // A saver left open for hours would otherwise keep its first reading, or show one past
+        // its use-by. Weather.refresh throttles itself; once a minute is plenty to ask.
+        if (now - weatherCheckedAt >= 60 * 1000) {
+            weatherCheckedAt = now;
+            if (window.Weather) Weather.refresh();
+            renderWeather();
+        }
         var until = darkAfter().ms;
         if (!dark && until && now - openedAt >= until) goDark();
         // Behind an opaque black layer there is nothing worth moving.

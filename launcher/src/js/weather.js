@@ -97,12 +97,19 @@
     var lastFailure = 0;
     var listeners = [];
 
+    // Which place and unit a reading belongs to, so a changed config.js never shows the old one.
+    function place() {
+        var c = cfg();
+        return [c.latitude, c.longitude, c.unit === 'fahrenheit' ? 'f' : 'c'].join(',');
+    }
+
     function load() {
         try {
             reading = JSON.parse(localStorage.getItem(STORE_KEY));
         } catch (e) {
             reading = null;
         }
+        if (reading && reading.place !== place()) reading = null;
     }
 
     function store() {
@@ -152,6 +159,7 @@
         if (!now || !day || typeof now.temperature_2m !== 'number') return false;
         reading = {
             at: Date.now(),
+            place: place(),
             temp: now.temperature_2m,
             code: typeof now.weather_code === 'number' ? now.weather_code : 3,
             max: day.temperature_2m_max[0],
